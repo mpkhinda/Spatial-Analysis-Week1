@@ -1,30 +1,94 @@
 ---
-title: "Displaying-data"
-author: "Matt Khinda"
+title: "Spatial Analysis Week 1: Displaying Data"
+author: "Matt Khinda, Esteban Garza, Manasa Acharya"
 date: "9/4/2021"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, fig.width=12, fig.height=8)
+
 ```
 
-## R Markdown
+  
+### Setup  
+__Load necessary packages__ 
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r load packages, message=FALSE}
+library(sf)
+library(tidyverse)
+library(ggthemes)
+library(ggspatial)
+library(here)
 ```
 
-## Including Plots
+__Read in data__  
+Datasets come from [The City of Miami's Open Data Portal](https://datahub-miamigis.opendata.arcgis.com/)
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r load datasets, message=FALSE}
+historic_districts <- st_read(here("Data", "Historic_Districts.geojson"))
+landmarks <- st_read(here("Data", "Landmarks.geojson"))
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+### Maps
+
+##### Plot 1: Single Color + Transparency   
+This plot shows the locations of all landmarks as well as the outline of historic districts in Miami, Florida. This was an attempt to create a legible plot without using color, though the only black & white basemaps are visually quite busy and detract from the legibility of the plotted shapes and lines.
+
+```{r plot1}
+ggplot() + 
+  annotation_map_tile(zoomin = 0, progress = "none", type = "osmgrayscale")  +
+  geom_sf(data = historic_districts, color = "Black",  fill = NA, size = 0.5) +
+  geom_sf(data = landmarks, shape = 17, size = 2, alpha = 0.35, color = "Black") +
+  theme_void()
+```
+  
+##### Plot 2: Shape and Color Defined by a Variable 
+This plot shows the different types of nightlife or entertainment venues relative to the historic districts in Miami, Florida. To do this, we filtered the 'landmarks' dataframe into a new 'entertainment' dataframe that only includes relevant sites to be plotted. We  used the "cartodark" basemap type as a nod to the nightlife theme and to accentuate the different colors and shapes of the variables plotted on top. 
+
+```{r plot2}
+entertainment <- landmarks %>%
+  filter( LMCNAME == "Night Club" | 
+          LMCNAME == "Adult Entertainment" |
+          LMCNAME == "Theater/Performing Arts"  |
+          LMCNAME == "Sport Complex" |
+          LMCNAME == "Movie Theater" |
+          LMCNAME == "Museum" |
+          LMCNAME == "Special Events" |
+          LMCNAME == "Stadium"
+          )
+
+ggplot() + 
+  annotation_map_tile(zoomin = 0, progress = "none", type = "cartodark")  +
+  geom_sf(data = historic_districts, color = NA, alpha = 0.4, aes(fill = "Historic Districts")) +
+  geom_sf(data = entertainment, aes(color = LMCNAME, shape = LMCNAME), size = 2.5) +
+  scale_shape_manual(values=seq(0,7)) +
+  scale_fill_manual(values = "DarkGrey") +
+  theme_void() +
+  labs(caption = "Map tiles and data by Carto", color = " ", shape = " ", fill = " ")
+```
+  
+##### Plot 3: Overlaying Basemaps + Layers
+This plots adds the dimension of elevation while still trying to retain the street information by overlaying the "cartolight" and "hillshade" basemaps. Equally, to try and retain some of the shading information while still delineating the historic districts, the polygons were drawn both as a fill with high transparency as well as an opaque outline of the same color. Also added north arrow and scale bar. 
+
+```{r plot3}
+ggplot() + 
+  annotation_map_tile(zoomin = 0, progress = "none", type = "hillshade")  +
+  annotation_map_tile(zoomin = 0, progress = "none", type = "cartolight", alpha = 0.4)  +
+  geom_sf(data = historic_districts, alpha = 0.5, color = NA, aes(fill = HD_NAME)) +
+  geom_sf(data = historic_districts, fill = NA, size = .8, aes(color = HD_NAME)) +
+  geom_sf(data = landmarks, size = 1.5, alpha = 0.2, color = "Black") +
+  labs(color = " ", fill = " ") +
+  annotation_north_arrow(which_north = "true", height = unit(0.75, "cm"), width = unit(0.75, "cm"), style = north_arrow_minimal) +
+  annotation_scale( height = unit(0.125, "cm"), pad_x = unit(1.25, "cm")) +
+  theme_void()
+```
+
+
+
+
+
+
+
+
+
