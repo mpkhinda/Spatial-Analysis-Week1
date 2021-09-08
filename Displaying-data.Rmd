@@ -1,33 +1,34 @@
 ---
 title: "Spatial Analysis Week 1: Displaying Data"
 author: "Matt Khinda, Esteban Garza, Manasa Acharya"
-date: "9/4/2021"
-output: html_document
+date: "9/8/2021"
+output:
+  html_document:
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, fig.width=12, fig.height=8)
 
 ```
-
   
 ### Setup  
 __Load necessary packages__ 
 
-```{r load packages, message=FALSE}
+```{r load packages, message=FALSE, class.source = 'fold-show'}
 library(sf)
 library(tidyverse)
 library(ggthemes)
 library(ggspatial)
 library(here)
 ```
-
+ 
 __Read in data__  
 Datasets come from [The City of Miami's Open Data Portal](https://datahub-miamigis.opendata.arcgis.com/)
 
-```{r load datasets, message=FALSE}
-historic_districts <- st_read(here("Data", "Historic_Districts.geojson"))
-landmarks <- st_read(here("Data", "Landmarks.geojson"))
+```{r load datasets, message=FALSE, class.source = 'fold-show'}
+historic_districts <- st_read(here("Data", "Historic_Districts.geojson"), quiet = TRUE)
+landmarks <- st_read(here("Data", "Landmarks.geojson"), quiet = TRUE)
 ```
 
 ### Maps
@@ -42,36 +43,65 @@ ggplot() +
   geom_sf(data = landmarks, shape = 17, size = 2, alpha = 0.35, color = "Black") +
   theme_void()
 ```
+    
+    
+    
   
-##### Plot 2: Shape and Color Defined by a Variable 
-This plot shows the different types of nightlife or entertainment venues relative to the historic districts in Miami, Florida. To do this, we filtered the 'landmarks' dataframe into a new 'entertainment' dataframe that only includes relevant sites to be plotted. We  used the "cartodark" basemap type as a nod to the nightlife theme and to accentuate the different colors and shapes of the variables plotted on top. 
+##### Plot 2: Exercise in Color Saturation
+This map layering landmarks and the historic district in Miami is an example of how too much color can deviate the attention from the map's purpose. This map, although could be considered a "pretty" map, loses focus of the data presented.
 
 ```{r plot2}
-entertainment <- landmarks %>%
-  filter( LMCNAME == "Night Club" | 
-          LMCNAME == "Adult Entertainment" |
-          LMCNAME == "Theater/Performing Arts"  |
-          LMCNAME == "Sport Complex" |
-          LMCNAME == "Movie Theater" |
-          LMCNAME == "Museum" |
-          LMCNAME == "Special Events" |
-          LMCNAME == "Stadium"
-          )
-
 ggplot() + 
-  annotation_map_tile(zoomin = 0, progress = "none", type = "cartodark")  +
-  geom_sf(data = historic_districts, color = NA, alpha = 0.4, aes(fill = "Historic Districts")) +
-  geom_sf(data = entertainment, aes(color = LMCNAME, shape = LMCNAME), size = 2.5) +
-  scale_shape_manual(values=seq(0,7)) +
-  scale_fill_manual(values = "DarkGrey") +
-  theme_void() +
-  labs(caption = "Map tiles and data by Carto", color = " ", shape = " ", fill = " ")
+  annotation_map_tile(zoomin = 0, progress = "none", type = "stamenwatercolor")  +
+  geom_sf(data = historic_districts, color = "Blue", aes(fill = "Historic Districts"), alpha = 0.25) +
+  geom_sf(data = landmarks, aes(color = "Landmarks")) +
+  scale_fill_manual(values = "Blue", name = " ")+
+  labs(caption ="Miami landmarks and Historic District map", color = " ") +
+  theme_void()
 ```
   
-##### Plot 3: Overlaying Basemaps + Layers
-This plots adds the dimension of elevation while still trying to retain the street information by overlaying the "cartolight" and "hillshade" basemaps. Equally, to try and retain some of the shading information while still delineating the historic districts, the polygons were drawn both as a fill with high transparency as well as an opaque outline of the same color. Also added north arrow and scale bar. 
+  
+  
+##### Plot 3: Filtered Landmarks 
+This map attempted to display parks and ramps by filtering the Landmarks dataset with the objective of understanding accessibility to public spaces around Miami's historic district. On experimenting with different basemaps and color schemes, I found the brighter shades of green and yellow to go well with a faded "cartolight" basemap. It was by observing the location of the data points plotted here that I realized that ramps here referred to 'highway ramps' and do not actually represent wheelchair accessibility as assumed previously.
 
 ```{r plot3}
+parkramp <- landmarks %>%
+  filter( LMCNAME == "Park" | 
+          LMCNAME == "Ramp")
+
+ggplot() + 
+  annotation_map_tile(zoomin = 0, progress = "none", type = "cartolight")  +
+  geom_sf(data = historic_districts, color = NA, alpha = 0.5, aes(fill = "Historic Districts")) +
+  geom_sf(data = parkramp, aes(color = LMCNAME, shape = LMCNAME), size = 3.5) +
+  scale_fill_manual(values = "Black") +
+  scale_color_manual(values = c("ForestGreen","Gold")) +
+  theme_void() +
+  labs(caption = "Parks and wheelchair accessbility around Miami's historic districts", color = " ", shape = " ", fill = " ")
+```
+  
+  
+  
+ 
+##### Plot 4: Data Oriented Map
+This map is effective in presenting the layered data in a simple straightforward way. The use of color is just enough to highlighting the data of interest. This map questioned our starting assumption that landmark density would be clearly correlated to the Historic District.
+
+```{r plot4}
+ggplot() + 
+  annotation_map_tile(zoomin = 0, progress = "none", type = "cartolight")  +
+  geom_sf(data = historic_districts, color = "Blue", aes(fill = "Historic Districts"), alpha = 0.25) +
+  geom_sf(data = landmarks, aes(color = "Landmarks")) +
+  scale_fill_manual(values = "Blue", name = " ")+
+  labs(caption ="Miami landmarks and Historic District map", color = " ") +
+  theme_void()
+```
+  
+  
+  
+##### Plot 5: Overlaying Basemaps + Layers
+This plots adds the dimension of elevation while still trying to retain the street information by overlaying the "cartolight" and "hillshade" basemaps. Equally, to try and retain some of the shading information while still delineating the historic districts, the polygons were drawn both as a fill with high transparency as well as an opaque outline of the same color. Wanted to use this map to emphasize and differentiate the districts rather than the landmarks. Also added north arrow and scale bar. 
+
+```{r plot5}
 ggplot() + 
   annotation_map_tile(zoomin = 0, progress = "none", type = "hillshade")  +
   annotation_map_tile(zoomin = 0, progress = "none", type = "cartolight", alpha = 0.4)  +
@@ -84,11 +114,22 @@ ggplot() +
   theme_void()
 ```
 
+### Contribution Statement  
 
+##### Matt Khinda  
+Matt drew plots 1 & 5 as well as writing the accompanying descriptions. He also compiled the code and knitted it into the final html file for submission. (12 points)
+  
+  
+##### Esteban Garza  
+Esteban experimented on different map types, filling transparency and color, layering Landmark data and Historic District polygons (plot 2 & 4) (9 points)
+  
+  
+##### Manasa Acharya  
+Manasa worked on experimenting with multiple maps representing the landmarks as well as filtering the larger dataset based on its categories. One of these attempts has been published as a part of this web page (plot 3). (9 points)
 
-
-
-
-
+  
+  
+  
+  
 
 
